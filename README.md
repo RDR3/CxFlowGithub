@@ -10,3 +10,4 @@ CxFlow master push test 6
 CxFlow master push test 7
 CxFlow master push test 8 multi tenant enabled
 CxFlow master push test 9 restarted cmd
+CxFlow master push test 10 created team RDR3 in cx
