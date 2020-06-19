@@ -4,7 +4,7 @@
 <%@ page import="java.math.*" %>
 <%@ page import="java.text.*" %>
 <%@ page import="java.util.*" %>
-
+<%@ page import="java.sql.PreparedStatement" %>
 <%@ include file="/dbconnection.jspf" %>
 
 <script type="text/javascript">
@@ -50,9 +50,13 @@ function decQuantity (prodid) {
 		// Dont need to do anything else
 			
 		// Well, apart from checking to see if they've accessed someone elses basket ;)
-		Statement stmt = conn.createStatement();
+		//Statement stmt = conn.createStatement();
+		PreparedStatement prepareStatement = conn.createStatement(sql);
 		try {
-			ResultSet rs = stmt.executeQuery("SELECT * FROM Baskets WHERE basketid = " + basketId);
+			//ResultSet rs = stmt.executeQuery("SELECT * FROM Baskets WHERE basketid = " + basketId);
+			String sql = "SELECT * FROM Baskets WHERE basketId =?";
+			prepareStatement.setString (1, basketId);
+			ResultSet rs = prepareStatement.executeQuery();
 			rs.next();
 			String bUserId = "" + rs.getInt("userid");
 			if ((userid == null && ! bUserId.equals("0")) || (userid != null && userid.equals(bUserId))) {
