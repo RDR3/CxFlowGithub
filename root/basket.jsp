@@ -48,7 +48,6 @@ function decQuantity (prodid) {
 	
 	if (basketId != null) {
 		// Dont need to do anything else
-			
 		// Well, apart from checking to see if they've accessed someone elses basket ;)
 		//Statement stmt = conn.createStatement();
 		PreparedStatement prepareStatement = conn.createStatement(sql);
@@ -166,33 +165,63 @@ function decQuantity (prodid) {
 			// Product in basket?
 			int currentQuantity = 0;
 			
-			stmt = conn.prepareStatement("SELECT * FROM BasketContents WHERE basketid=" + basketId + " AND productid = " + productId);
-			rs = stmt.executeQuery();
-			if (rs.next()) {
-                                quantity = String.valueOf(Integer.parseInt(quantity) + rs.getInt("quantity"));
-				rs.close();
-				stmt.close();
-				stmt = conn.prepareStatement("UPDATE BasketContents SET quantity = " + Integer.parseInt(quantity) + 
-						" WHERE basketid=" + basketId + " AND productid = " + productId);
-				stmt.execute();
-				if (Integer.parseInt(quantity) < 0) {
-					conn.createStatement().execute("UPDATE Score SET status = 1 WHERE task = 'NEG_BASKET'");
-				}
-			} else {
-				rs.close();
-				stmt.close();
-				stmt = conn.prepareStatement("SELECT * FROM Products where productid=" + productId);
-				rs = stmt.executeQuery();
-				if (rs.next()) {
-					Double price = rs.getDouble("price"); 
-					rs.close();
-					stmt.close();
-					stmt = conn.prepareStatement("INSERT INTO BasketContents (basketid, productid, quantity, pricetopay) VALUES (" +
-							basketId + ", " + productId + ", " + Integer.parseInt(quantity) + ", " + price + ")");
-					stmt.execute();
-					if (Integer.parseInt(quantity) < 0) {
-						conn.createStatement().execute("UPDATE Score SET status = 1 WHERE task = 'NEG_BASKET'");
-					}
+			//stmt = conn.prepareStatement("SELECT * FROM BasketContents WHERE basketid=" + basketId + " AND productid = " + productId);
+			//Security Fix
+			PreparedStatement ps2 = conn.prepareStatement(sql2)
+			try{
+			    String sql2 = "SELECT * FROM BasketContents WHERE basketid= ? AND productid = ?";
+			    prepareStatement.setString(1, basketId);
+			    prepareStatement.setString(2, productId);
+			    rs = prepareStatement.executeQuery();
+                if (rs.next()) {
+                                    quantity = String.valueOf(Integer.parseInt(quantity) + rs.getInt("quantity"));
+                    rs.close();
+                    prepareStatement.close();
+                    //stmt = conn.prepareStatement("UPDATE BasketContents SET quantity = " + Integer.parseInt(quantity) +
+                    //        " WHERE basketid=" + basketId + " AND productid = " + productId);
+                    // Security Fix
+                    PreparedStatement ps3 = conn.prepareStatement(sql3);
+                    try {
+                        //stmt.execute();
+                        String sql3 = "UPDATE BasketContents SET quantity = " + Integer.parseInt(quantity) + "WHERE basketId = ? AND proudctId = ?";
+                        prepareStatement.setString(1, basketId);
+                        prepareStatement.setString(2, productId);
+                        prepareStatement.executeQuery();
+                        if (Integer.parseInt(quantity) < 0) {
+                            conn.createStatement().execute("UPDATE Score SET status = 1 WHERE task = 'NEG_BASKET'");
+                        }
+                    } else {
+                        rs.close();
+                        prepareStatement.close();
+                        //stmt = conn.prepareStatement("SELECT * FROM Products where productid = " + productId);
+                        //Security Fix
+                        PreparedStatement ps4 = conn.prepareStatement(sql4)
+                        try{
+                            //rs = stmt.executeQuery();
+                            String sql4 = "SELECT * FROM Products WHERE productid = ?";
+                            prepareStatement.setString(1, productId);
+                            rs = prepareStatement.executeQuery();
+                            if (rs.next()) {
+                                Double price = rs.getDouble("price");
+                                rs.close();
+                                prepareStatement.close();
+                                //stmt = conn.prepareStatement("INSERT INTO BasketContents (basketid, productid, quantity, pricetopay) VALUES (" +
+                                //        basketId + ", " + productId + ", " + Integer.parseInt(quantity) + ", " + price + ")");
+                                //Security Fix
+                                PreparedStatement ps5 = conn.prepareStatement(sql5);
+                                try {
+                                    //stmt.execute();
+                                    String sql5 = "INSERT INTO BasketContents (basketid, productid, quantity, pricetopay) VALUES ( ? , ? " + Integer.parseInt(quantity) + ", " + price + ")";
+                                    prepareStatement.setString(1, basketId);
+                                    prepareStatement.setString(2, productId);
+                                    prepareStatement.executeQuery();
+                                    if (Integer.parseInt(quantity) < 0) {
+                                        conn.createStatement().execute("UPDATE Score SET status = 1 WHERE task = 'NEG_BASKET'");
+                                    }
+                                }
+                            }
+                        }
+                    }
 				}
 			}
 			out.println("Your basket had been updated.<br/>");
@@ -222,17 +251,34 @@ function decQuantity (prodid) {
 			if (key.startsWith("quantity_")) {
 				String prodId = key.substring(9);
 				if (value.equals("0")) {
-					stmt = conn.prepareStatement("DELETE FROM BasketContents WHERE basketid=" + basketId +
-							" AND productid = " + prodId);
-					stmt.execute();
-					stmt.close();						
+					//stmt = conn.prepareStatement("DELETE FROM BasketContents WHERE basketid=" + basketId +
+					//		" AND productid = " + prodId);
+					//Security Fix
+					PreparedStatement ps6 = conn.prepareStatement(sql6);
+					try {
+                        //stmt.execute();
+                        String sql6 = "DELETE FROM BasketContents WHERE basketid = ? AND productid = ?";
+                        prepareStatement.setString(1, basketId);
+                        prepareStatement.setString(2, productId);
+                        prepareStatement.executeQuery();
+                        prepareStatement.close();
+                    }
 				} else {
-					stmt = conn.prepareStatement("UPDATE BasketContents SET quantity = " + Integer.parseInt(value) + " WHERE basketid=" + basketId +
-							" AND productid = " + prodId);
-					stmt.execute();
-					if (Integer.parseInt(value) < 0) {
-						conn.createStatement().execute("UPDATE Score SET status = 1 WHERE task = 'NEG_BASKET'");
-					}
+					//stmt = conn.prepareStatement("UPDATE BasketContents SET quantity = " + Integer.parseInt(value) + " WHERE basketid=" + basketId +
+					//		" AND productid = " + prodId);
+					//Security Fix
+					PreparedStatement ps7 = conn.prepareStatement(sql7);
+					try {
+                        //stmt.execute();
+                        String sql7 = "UPDATE BasketContents SET quantity = " + Integer.parseInt(value) + " WHERE basketid = ? AND productid = ? ";
+                        prepareStatement.setString(1, basketId);
+                        prepareStatement.setString(2, productId);
+                        prepareStatement.executeQuery();
+                        prepareStatement.close();
+                        if (Integer.parseInt(value) < 0) {
+                            conn.createStatement().execute("UPDATE Score SET status = 1 WHERE task = 'NEG_BASKET'");
+                        }
+                    }
 				}
 			}
 		}
