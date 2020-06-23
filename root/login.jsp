@@ -1,5 +1,5 @@
 <%@ page import="java.sql.*" %>
-
+<%@ page import="java.sql.PreparedStatement" %>
 <%@ include file="/dbconnection.jspf" %>
 
 <%
@@ -12,49 +12,72 @@ if (request.getMethod().equals("POST") && username != null) {
 	Statement stmt = conn.createStatement();
 	ResultSet rs = null;
 	try {
-		rs = stmt.executeQuery("SELECT * FROM Users WHERE (name = '" + username + "' AND password = '" + password + "')");
-		if (rs.next()) {
-			loggedIn = true;
-			debug="Logged in";
-			// We must have been given the right credentials, right? ;)
-			// Put credentials in the session
-			String userid = "" + rs.getInt("userid");
-			session.setAttribute("username", rs.getString("name"));
-			session.setAttribute("userid", userid);
-			session.setAttribute("usertype", rs.getString("type"));
+		PreparedStatement ps1 = conn.prepareStatement(sql1)
+		try {
+            //rs = stmt.executeQuery("SELECT * FROM Users WHERE (name = '" + username + "' AND password = '" + password + "')");
+            //Security Fix
+            String sql1 = "SELECT * FROM Users WHERE (name = ? AND password = ?)";
+            prepareStatement.setString(1, username);
+            prepareStatement.setString(2, password);
+            rs = prepareStatement.executeQuery();
+            if (rs.next()) {
+                loggedIn = true;
+                debug="Logged in";
+                // We must have been given the right credentials, right? ;)
+                // Put credentials in the session
+                String userid = "" + rs.getInt("userid");
+                session.setAttribute("username", rs.getString("name"));
+                session.setAttribute("userid", userid);
+                session.setAttribute("usertype", rs.getString("type"));
 
-			// Update the scores
-			if (userid.equals("3")) {
-				stmt.execute("UPDATE Score SET status = 1 WHERE task = 'LOGIN_TEST'");
-			} else if (userid.equals("1")) {
-				stmt.execute("UPDATE Score SET status = 1 WHERE task = 'LOGIN_USER1'");
-			} else if (userid.equals("2")) {
-				stmt.execute("UPDATE Score SET status = 1 WHERE task = 'LOGIN_ADMIN'");
-			}
+                // Update the scores
+                if (userid.equals("3")) {
+                    stmt.execute("UPDATE Score SET status = 1 WHERE task = 'LOGIN_TEST'");
+                } else if (userid.equals("1")) {
+                    stmt.execute("UPDATE Score SET status = 1 WHERE task = 'LOGIN_USER1'");
+                } else if (userid.equals("2")) {
+                    stmt.execute("UPDATE Score SET status = 1 WHERE task = 'LOGIN_ADMIN'");
+                }
 
-			Cookie[] cookies = request.getCookies();
-			String basketId = null;
-			if (cookies != null) {
-				for (Cookie cookie : cookies) {
-					if (cookie.getName().equals("b_id") && cookie.getValue().length() > 0) {
-						basketId = cookie.getValue();
-						break;
-					}
-				}
-			}
-			if (basketId != null) {
-				debug += " basketid = " + basketId;
-				int cBasketId = rs.getInt("currentbasketid");
-				if (cBasketId > 0) {
-					// Merge baskets
-					debug += " currentbasketid = " + cBasketId;
-					stmt.execute("UPDATE BasketContents SET basketid = " + cBasketId + " WHERE basketid = " + basketId);
-
-				} else {
-					stmt.execute("UPDATE Users SET currentbasketid = " + basketId + " WHERE userid = " + userid);
-				}
-				response.addCookie(new Cookie("b_id", ""));
-			}
+                Cookie[] cookies = request.getCookies();
+                String basketId = null;
+                if (cookies != null) {
+                    for (Cookie cookie : cookies) {
+                        if (cookie.getName().equals("b_id") && cookie.getValue().length() > 0) {
+                            basketId = cookie.getValue();
+                            break;
+                        }
+                    }
+                }
+                if (basketId != null) {
+                    debug += " basketid = " + basketId;
+                    int cBasketId = rs.getInt("currentbasketid");
+                    if (cBasketId > 0) {
+                        // Merge baskets
+                        debug += " currentbasketid = " + cBasketId;
+                        //stmt.execute("UPDATE BasketContents SET basketid = " + cBasketId + " WHERE basketid = " + basketId);
+                        //security Fix
+                        PreparedStatement ps2 = conn.prepareStatement(sql2);
+                        try {
+                            String sql2 = "UPDATE BasketContents SET basketid = ? WHERE basketid = ?";
+                            prepareStatement.setString(1, cBasketId);
+                            prepareStatement.setString(2, basketId);
+                            prepareStatement.execute();
+                        }
+                    } else {
+                        //stmt.execute("UPDATE Users SET currentbasketid = " + basketId + " WHERE userid = " + userid);
+                        //Security Fix
+                        PreparedStatement ps3 = conn.prepareStatement(sql3);
+                        try {
+                            String sql3 = "UPDATE Users SET currentbasketid = ? WHERE userid = ? ";
+                            prepareStatement.setString(1, basketId);
+                            prepareStatement.setString(2, userid);
+                            prepareStatement.execute();
+                        }
+                    }
+                    response.addCookie(new Cookie("b_id", ""));
+                }
+            }
 
 		}
 	} catch (Exception e) {
@@ -68,7 +91,7 @@ if (request.getMethod().equals("POST") && username != null) {
 		if (rs != null) {
 			rs.close();
 		}
-		stmt.close();
+		prepareStatement.close();
 	}
 }
 %>
