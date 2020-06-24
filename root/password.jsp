@@ -1,5 +1,5 @@
 <%@ page import="java.sql.*" %>
-
+<%@ page import="java.sql.PreparedStatement" %>
 <%@ include file="/dbconnection.jspf" %>
 <jsp:include page="/header.jsp"/>
 
@@ -18,22 +18,30 @@ if (password1 != null && password1.length() > 0) {
 	}  else if (password1 == null || password1.length() < 5) {
 		failresult = "You must supply a password of at least 5 characters.";
 	} else {
-		Statement stmt = conn.createStatement();
-		ResultSet rs = null;
+		//Statement stmt = conn.createStatement();
+		//Security Fix
+		PreparedStatement ps1 = conn.prepareStatement(sql);
 		try {
-			stmt.executeQuery("UPDATE Users set password= '" + password1 + "' where name = '" + username + "'");
-			
-			okresult = "Your password has been changed";
+            ResultSet rs = null;
+            try {
+                //stmt.executeQuery("UPDATE Users set password= '" + password1 + "' where name = '" + username + "'");
+                //Security Fix
+                String sql = "UPDATE Users SET password = ? WHERE name = ? ";
+                prepareStatement.setString(1, password1);
+                prepareStatement.setString(2, username);
 
-			if (request.getMethod().equals("GET")) {
-				conn.createStatement().execute("UPDATE Score SET status = 1 WHERE task = 'PASSWD_GET'");
-			}
+                okresult = "Your password has been changed";
 
-		} catch (Exception e) {
-			failresult = "System error.";
-		} finally {
-			stmt.close();
-		}
+                if (request.getMethod().equals("GET")) {
+                    conn.createStatement().execute("UPDATE Score SET status = 1 WHERE task = 'PASSWD_GET'");
+                }
+
+            } catch (Exception e) {
+                failresult = "System error.";
+            } finally {
+                prepareStatement.close();
+            }
+        }
 
 	}
 }
